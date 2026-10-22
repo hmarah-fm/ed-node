@@ -731,25 +731,12 @@
                   "item": [
                     {
                       "name": "511-Create RDF Service Asset Sparql",
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              ""
-                            ],
-                            "type": "text/javascript",
-                            "packages": {},
-                            "requests": {}
-                          }
-                        }
-                      ],
                       "request": {
                         "method": "POST",
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n  \"@context\": [\n    \"https://w3id.org/edc/connector/management/v0.0.1\",\n    {\n      \"msc\": \"http://example.com/msc#\",\n      \"dcat\": \"http://www.w3.org/ns/dcat#\",\n      \"msc_dms\": \"http://www.w3.org/ns/msc_dms#\",\n      \"edc_rdf\": \"https://ontology.flandersmake.be/edc_rdf/ontology#\"\n    }\n  ],\n  \"@id\": \"request-rdf-service-sparql\",\n  \"@type\": \"Asset\",\n  \"properties\": {\n    \"msc_dms:description\": \"Dataset 1 for External Processes from sparql endpoint\",\n    \"msc_dms:name\": \"Location name\",\n    \"msc_dms:relatedSpatialRegion\":\"Various\",\n    \"msc_dms:aboutSupplier\":\"No supplier\",\n    \"msc_dms:aboutProcess\":\"true\"\n  },\n  \"dataAddress\": {\n    \"@type\": \"DataAddress\",\n    \"type\": \"RDFService\",\n    \"edc_rdf:sparqlEndpoint\":\"http://172.17.0.1:3032/provider/query\",\n//    \"edc_rdf:sparqlQuery\":\"PREFIX sc: <http://example.com/MSCOnto#> CONSTRUCT { ?supplier sc:hasLocation ?location . } WHERE { ?supplier sc:hasLocation ?location ; }\",\n    \"edc_rdf:sparqlQuery\":\"PREFIX sc: <http://example.com/MSCOnto#> CONSTRUCT { ?s ?p ?o .} WHERE { ?s ?p ?o .}\",\n    \"edc_rdf:username\":\"admin\",\n    \"edc_rdf:password\":\"mypassword\",\n    \"edc_rdf:serialization\": \"TTL\",\n    \"edc_rdf:serviceType\": \"sparqlendpoint\"\n  }\n}\n\n",
+                          "raw": "{\n  \"@context\": [\n    \"https://w3id.org/edc/connector/management/v0.0.1\",\n    {\n      \"msc\": \"http://example.com/msc#\",\n      \"dcat\": \"http://www.w3.org/ns/dcat#\",\n      \"msc_dms\": \"http://www.w3.org/ns/msc_dms#\",\n      \"edc_rdf\": \"https://ontology.flandersmake.be/edc_rdf/ontology#\"\n    }\n  ],\n  \"@id\": \"request-rdf-service-sparql\",\n  \"@type\": \"Asset\",\n  \"properties\": {\n    \"msc_dms:description\": \"Dataset 1 for External Processes from sparql endpoint\",\n    \"msc_dms:name\": \"Location name\",\n    \"msc_dms:relatedSpatialRegion\":\"Various\",\n    \"msc_dms:aboutSupplier\":\"No supplier\",\n    \"msc_dms:aboutProcess\":\"true\"\n  },\n  \"dataAddress\": {\n    \"@type\": \"DataAddress\",\n    \"type\": \"RDFService\",\n    \"edc_rdf:sparqlEndpoint\":\"http://172.17.0.1:3032/provider/query\",\n    \"edc_rdf:sparqlQuery\":\"CONSTRUCT { ?s ?p ?o .} WHERE { ?s ?p ?o .}\",\n    \"edc_rdf:username\":\"admin\",\n    \"edc_rdf:password\":\"mypassword\",\n    \"edc_rdf:serialization\": \"TTL\",\n    \"edc_rdf:serviceType\": \"sparqlendpoint\"\n  }\n}\n\n",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -977,19 +964,15 @@
               "response": []
             },
             {
-              "name": "Get Connector1 Catalog",
+              "name": "Get Connector2 Catalog",
               "event": [
                 {
                   "listen": "test",
                   "script": {
-                    "exec": [
-                      "pm.test(\"Status code is >=200 and <300\", function () {",
-                      "    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true",
-                      "});"
-                    ],
                     "type": "text/javascript",
-                    "packages": {},
-                    "requests": {}
+                    "exec": [
+                      "pm.test(\"Status code is >=200 and <300\", function () {\n    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true\n});"
+                    ]
                   }
                 }
               ],
@@ -1018,7 +1001,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"@context\": {\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\n    },\n    \"@type\": \"CatalogRequest\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"counterPartyAddress\": \"http://edc-connector-connector1:8082/api/dsp\",\n    \"counterPartyId\": \"{{Connector1DID}}\",\n    \"querySpec\": {\n        \"offset\": 0,\n        \"limit\": 50\n    }\n}",
+                  "raw": "{\n    \"@context\": {\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\n    },\n    \"@type\": \"CatalogRequest\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"counterPartyAddress\": \"http://edc-connector-connector2:8082/api/dsp\",\n    \"counterPartyId\": \"{{Connector2DID}}\",\n    \"querySpec\": {\n        \"offset\": 0,\n        \"limit\": 50\n    }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1380,32 +1363,19 @@
                     {
                       "listen": "prerequest",
                       "script": {
-                        "exec": [
-                          "if(!pm.collectionVariables.has(\"POLICY_ID_RDF\")){",
-                          "    throw new Error('Policy-ID of Asset is not yet available, please execute request \"Get Cached Catalog\" first!');",
-                          "}"
-                        ],
                         "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
+                        "exec": [
+                          "if(!pm.collectionVariables.has(\"POLICY_ID_RDF\")){\n    throw new Error('Policy-ID of Asset is not yet available, please execute request \"Get Cached Catalog\" first!');\n}"
+                        ]
                       }
                     },
                     {
                       "listen": "test",
                       "script": {
-                        "exec": [
-                          "pm.collectionVariables.set(\"CONTRACT_NEGOTIATION_ID_RDF\", pm.response.json()[\"@id\"])",
-                          "",
-                          "pm.test(\"Status code is >=200 and <300\", function () {",
-                          "    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true",
-                          "});",
-                          "pm.test(\"Contract negotiation id is set\", function(){",
-                          "    pm.expect(pm.collectionVariables.get(\"CONTRACT_NEGOTIATION_ID_RDF\")).not.to.be.undefined",
-                          "})"
-                        ],
                         "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
+                        "exec": [
+                          "pm.collectionVariables.set(\"CONTRACT_NEGOTIATION_ID_RDF\", pm.response.json()[\"@id\"])\n\npm.test(\"Status code is >=200 and <300\", function () {\n    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true\n});\npm.test(\"Contract negotiation id is set\", function(){\n    pm.expect(pm.collectionVariables.get(\"CONTRACT_NEGOTIATION_ID_RDF\")).not.to.be.undefined\n})"
+                        ]
                       }
                     }
                   ],
@@ -1429,7 +1399,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"@context\": [\n        \"https://w3id.org/edc/connector/management/v0.0.1\"\n    ],\n    \"@type\": \"ContractRequest\",\n    \"counterPartyAddress\": \"http://edc-connector-connector1:8082/api/dsp\",\n    \"counterPartyId\": \"{{Connector1DID}}\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"policy\": {\n        \"@type\": \"Offer\",\n        \"@id\": \"{{POLICY_ID_RDF}}\",\n        \"assigner\": \"{{Connector1DID}}\",\n        \"permission\": [{\n                \"action\": \"use\"\n            }],\n        \"prohibition\": [],\n        \"obligation\": [],\n        \"target\": \"request-rdf-service-file\"\n    },\n\n    \"callbackAddresses\": []\n}",
+                      "raw": "{\n    \"@context\": [\n        \"https://w3id.org/edc/connector/management/v0.0.1\"\n    ],\n    \"@type\": \"ContractRequest\",\n    \"counterPartyAddress\": \"http://edc-connector-connector1:8082/api/dsp\",\n    \"counterPartyId\": \"{{Connector1DID}}\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"policy\": {\n        \"@type\": \"Offer\",\n        \"@id\": \"{{POLICY_ID_RDF}}\",\n        \"assigner\": \"{{Connector1DID}}\",\n        \"permission\": [{\n                \"action\": \"use\"\n            }],\n        \"prohibition\": [],\n        \"obligation\": [],\n        \"target\": \"request-rdf-service-file\"\n    },\n    \"callbackAddresses\": []\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -1545,7 +1515,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"@context\": [\n        \"https://w3id.org/edc/connector/management/v0.0.1\"\n    ],\n    \"assetId\": \"request-rdf-service-file\",\n    \"counterPartyAddress\": \"http://edc-connector-connector1:8082/api/dsp\",\n    \"counterPartyId\": \"{{Connector1DID}}\",\n    \"contractId\": \"{{CONTRACT_AGREEMENT_ID_RDF}}\",\n    \"dataDestination\": {\n        \"type\": \"HttpProxy\"\n    },\n    \"protocol\": \"dataspace-protocol-http\",\n    \"transferType\": \"HttpData-PULL\",\n    \"callbackAddresses\": [ {\n        \"uri\": \"http://edc-connector-connectorcp:8082/api/dsp\"\n    }]\n}",
+                      "raw": "{\n    \"@context\": [\n        \"https://w3id.org/edc/connector/management/v0.0.1\"\n    ],\n    \"assetId\": \"request-rdf-service-file\",\n    \"counterPartyAddress\": \"http://edc-connector-connector1:8082/api/dsp\",\n    \"counterPartyId\": \"{{Connector1DID}}\",\n    \"contractId\": \"{{CONTRACT_AGREEMENT_ID_RDF}}\",\n    \"dataDestination\": {\n        \"type\": \"HttpProxy\"\n    },\n    \"protocol\": \"dataspace-protocol-http\",\n    \"transferType\": \"HttpData-PULL\",\n    \"callbackAddresses\": []\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -1634,46 +1604,10 @@
                     {
                       "listen": "test",
                       "script": {
-                        "exec": [
-                          "// get the transfer process id of \"asset-1\" and save it as an collectionVariables variable if the response body is not empty",
-                          "// if(pm.response.code < 300 && pm.response.code >= 200 && pm.response.json().length > 0){",
-                          "//   const transferProcessId = pm.response.json()[0][\"transferProcessId\"];",
-                          "//   pm.collectionVariables.set(\"TRANSFER_Quote_Request_PROCESS_ID_flash\", transferProcessId);",
-                          "// }",
-                          "",
-                          "if(pm.response.code < 300 && pm.response.code >= 200 && pm.response.json().length > 0){",
-                          "    var find_transferProcessId;",
-                          "    if (pm.collectionVariables.has(\"CONTRACT_AGREEMENT_ID_RDF\")){",
-                          "        find_transferProcessId = pm.response.json().find((el) => el[\"agreementId\"] == pm.collectionVariables.get(\"CONTRACT_AGREEMENT_ID_RDF\"))",
-                          "    }",
-                          "",
-                          "    if(find_transferProcessId){",
-                          "        const transferProcessId = find_transferProcessId[\"transferProcessId\"];",
-                          "        pm.collectionVariables.set(\"TRANSFER_PROCESS_ID_RDF\", transferProcessId);",
-                          "    }",
-                          "}",
-                          "",
-                          "pm.test(\"Status code is >=200 and <300\", function () {",
-                          "    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true",
-                          "});",
-                          "pm.test(\"Transfer process id is set\", function(){",
-                          "    pm.expect(pm.collectionVariables.get(\"TRANSFER_PROCESS_ID_RDF\")).not.to.be.undefined",
-                          "})"
-                        ],
                         "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
-                      }
-                    },
-                    {
-                      "listen": "prerequest",
-                      "script": {
                         "exec": [
-                          ""
-                        ],
-                        "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
+                          "// get the transfer process id of \"asset-1\" and save it as an collectionVariables variable if the response body is not empty\n// if(pm.response.code < 300 && pm.response.code >= 200 && pm.response.json().length > 0){\n//   const transferProcessId = pm.response.json()[0][\"transferProcessId\"];\n//   pm.collectionVariables.set(\"TRANSFER_Quote_Request_PROCESS_ID_flash\", transferProcessId);\n// }\n\nconsole.log(`contract agreement id ${pm.collectionVariables.get(\"CONTRACT_AGREEMENT_ID_RDF\")}`)\nif(pm.response.code < 300 && pm.response.code >= 200 && pm.response.json().length > 0){\n    var find_transferProcessId;\n    if (pm.collectionVariables.has(\"CONTRACT_AGREEMENT_ID_RDF\")){\n        find_transferProcessId = pm.response.json().find((el) => el[\"agreementId\"] == pm.collectionVariables.get(\"CONTRACT_AGREEMENT_ID_RDF\"))\n    }\n\n    if(find_transferProcessId){\n        const transferProcessId = find_transferProcessId[\"transferProcessId\"];\nconsole.log(`transfer process id ${transferProcessId}`)\n        pm.collectionVariables.set(\"TRANSFER_PROCESS_ID_RDF\", transferProcessId);\n    } else {\nconsole.log(`transfer process id not found`)\n        pm.collectionVariables.set(\"TRANSFER_PROCESS_ID_RDF\", undefined);\n\n    }\n}\n\npm.test(\"Status code is >=200 and <300\", function () {\n    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true\n});\npm.test(\"Transfer process id is set\", function(){\n    pm.expect(pm.collectionVariables.get(\"TRANSFER_PROCESS_ID_RDF\")).not.to.be.undefined\n})"
+                        ]
                       }
                     }
                   ],
@@ -1713,35 +1647,19 @@
                     {
                       "listen": "test",
                       "script": {
-                        "exec": [
-                          "let endpoint = pm.response.json()[\"endpoint\"];",
-                          "",
-                          "// remove trailing \"/api/public\" if present",
-                          "let baseEndpoint = endpoint.replace(/\\/api\\/public$/, \"\");",
-                          "",
-                          "pm.collectionVariables.set(\"PROVIDER_PUBLIC_API\", baseEndpoint);",
-                          "pm.collectionVariables.set(\"QUOTE_AUTHORIZATION_RDF\", pm.response.json()[\"authorization\"]);",
-                          "",
-                          "pm.test(\"Status code is >=200 and <300\", function () {",
-                          "    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true",
-                          "});"
-                        ],
                         "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
+                        "exec": [
+                          "let endpoint = pm.response.json()[\"endpoint\"];\n\n// remove trailing \"/api/public\" if present\nlet baseEndpoint = endpoint.replace(/\\/api\\/public$/, \"\");\n\npm.collectionVariables.set(\"PROVIDER_PUBLIC_API\", baseEndpoint);\npm.collectionVariables.set(\"QUOTE_AUTHORIZATION_RDF\", pm.response.json()[\"authorization\"]);\n\npm.test(\"Status code is >=200 and <300\", function () {\n    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true\n});"
+                        ]
                       }
                     },
                     {
                       "listen": "prerequest",
                       "script": {
-                        "exec": [
-                          "if(!pm.collectionVariables.has(\"TRANSFER_PROCESS_ID_RDF\")){",
-                          "    throw new Error('Transfer Process ID is not yet available, please execute request \"Get Transfer Processes\" first!');",
-                          "}"
-                        ],
                         "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
+                        "exec": [
+                          "if(!pm.collectionVariables.has(\"TRANSFER_PROCESS_ID_RDF\")){\n    throw new Error('Transfer Process ID is not yet available, please execute request \"Get Transfer Processes\" first!');\n}"
+                        ]
                       }
                     }
                   ],
@@ -1780,32 +1698,24 @@
                   "response": []
                 },
                 {
-                  "name": "428-Download Data from Public API",
+                  "name": "428-Download Data from Public API TTL",
                   "event": [
                     {
                       "listen": "prerequest",
                       "script": {
-                        "exec": [
-                          "if(!pm.collectionVariables.has(\"QUOTE_AUTHORIZATION_RDF\")){",
-                          "    throw new Error(' The authorization token is not yet available, please execute request \"Get EDR DataAddress for TransferId\" first!');",
-                          "}"
-                        ],
                         "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
+                        "exec": [
+                          "if(!pm.collectionVariables.has(\"QUOTE_AUTHORIZATION_RDF\")){\n    throw new Error(' The authorization token is not yet available, please execute request \"Get EDR DataAddress for TransferId\" first!');\n}"
+                        ]
                       }
                     },
                     {
                       "listen": "test",
                       "script": {
-                        "exec": [
-                          "pm.test(\"Status code is >=200 and <300\", function () {",
-                          "    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true",
-                          "});"
-                        ],
                         "type": "text/javascript",
-                        "packages": {},
-                        "requests": {}
+                        "exec": [
+                          "pm.test(\"Status code is >=200 and <300\", function () {\n    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true\n});"
+                        ]
                       }
                     }
                   ],
@@ -1820,8 +1730,71 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "{{QUOTE_AUTHORIZATION_RDF}}",
-                        "type": "text"
+                        "value": "{{QUOTE_AUTHORIZATION_RDF}}"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{PROVIDER_PUBLIC_API}}/api/public?edc_rdf:serialization=TTL",
+                      "host": [
+                        "{{PROVIDER_PUBLIC_API}}"
+                      ],
+                      "path": [
+                        "api",
+                        "public"
+                      ],
+                      "query": [
+                        {
+                          "key": "edc_rdf:serialization",
+                          "value": "TTL"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "428-Download Data from Public API XML/RDF",
+                  "event": [
+                    {
+                      "listen": "prerequest",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "if(!pm.collectionVariables.has(\"QUOTE_AUTHORIZATION_RDF\")){\n    throw new Error(' The authorization token is not yet available, please execute request \"Get EDR DataAddress for TransferId\" first!');\n}"
+                        ]
+                      }
+                    },
+                    {
+                      "listen": "test",
+                      "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                          "pm.test(\"Status code is >=200 and <300\", function () {\n    pm.expect(pm.response.code < 300 && pm.response.code >= 200).to.be.true\n});"
+                        ]
+                      }
+                    }
+                  ],
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "auth": {
+                      "type": "noauth"
+                    },
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "{{QUOTE_AUTHORIZATION_RDF}}"
                       }
                     ],
                     "body": {
