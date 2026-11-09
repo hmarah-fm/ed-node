@@ -46,7 +46,15 @@ Connector2:
   - store: `http://localhost:3032/provider/query`
   - query: `PREFIX sc: <http://example.com/MSCOnto#> CONSTRUCT { ?s ?p ?o .} WHERE { ?s ?p ?o .}`  
 
+For the Postman collection, set `Connector2Fuseki` to `3032` and set `FusekiUsername` / `FusekiPassword` for the status check. The SPARQL asset endpoint must be reachable from Connector 2; `172.17.0.1` is the Docker host gateway in the current setup. Set each `.env-connector*` `NGINX_PUBLIC_HOST` to `localhost` for same-machine Postman downloads, or to a host/IP reachable by remote consumers.
+
 ## Run
+
+### Initialize the edc-rdf git submodule
+
+```bash
+git submodule update --init extensions/edc-rdf
+```
 
 ### Postgres
 
@@ -82,6 +90,22 @@ cd tests/issuerservice-vc;
 . ./deploy.sh ${ED_NODE_INSTANCE_NAME} restart
 . ./deploy.sh ${ED_NODE_INSTANCE_NAME} down-v
 ```
+
+```sh
+# load the env vars for the targeted connector
+source ./.env-connector1
+source ./.env-connector2
+source ./.env-connectorcp
+
+# generate the keys for the targeted connector
+. ./generateEDNodeFiles-KeysDIDVault.sh ${ED_NODE_INSTANCE_NAME} ${BASE_HOST}:${NGINX_INTERNAL_PORT};
+
+# start/stop the connector
+./deploy.sh ${ED_NODE_INSTANCE_NAME} 
+./deploy.sh ${ED_NODE_INSTANCE_NAME} restart
+./deploy.sh ${ED_NODE_INSTANCE_NAME} down-v
+```
+
 
 Check:
 - the postman collection 

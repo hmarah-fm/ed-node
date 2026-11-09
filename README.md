@@ -30,6 +30,7 @@ Define parameters of `.env-<instanceName>` file:
 - `BASE_HOST`: Host
 - `NGINX_PROTOCOL`: Protocol (http or https)
 - `NGINX_EXPOSED_PORT`: Port (exposed port for NGINX - `ED-Node` gateway)
+- `NGINX_PUBLIC_HOST`: Hostname or IP advertised for public data transfers. Use `localhost` for same-machine consumers; remote consumers need a hostname or IP they can resolve and reach.
 - `ED_NODE_INSTANCE_NAME`: `ED-Node` Identifier (contained by `ED-Node` DID)
 - `UNIMAAS_ISSUERSERVICEVC_PROTOCOL`: IssuerService Protocol (http or https) (obtaining VCs)
 - `UNIMAAS_ISSUERSERVICEVC_HOST`: IssuerService Host (obtaining VCs)

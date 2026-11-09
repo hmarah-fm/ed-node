@@ -238,7 +238,7 @@ services:
       - UNIMAAS_OIDC_IDP_PORT=8080
       - UNIMAAS_OIDC_IDP_PATH=/realms/unimaas/protocol/openid-connect/token
       - UNIMAAS_OIDC_IDP_CLIENT_ID=did:web:edc-proxy-connector1%3A80:connector1
-      - UNIMAAS_OIDC_IDP_CLIENT_SECRET=EqdQ8TRr4AbROpFrXDr3a4r8pEzQQjN7
+      - UNIMAAS_OIDC_IDP_CLIENT_SECRET=DTcrLc4QjnlCwmSR31iyejfN1cnaj0F7
 
       # ===========================================
       # VCs Credential Manager Duplicate handling strategies
@@ -399,7 +399,7 @@ services:
       # Public transfer endpoint
       #- EDC_TRANSFER_PROXY_ENDPOINT=http://edc-proxy-connector1:/api/public
       #- EDC_DATAPLANE_PROXY_PUBLIC_ENDPOINT=http://edc-proxy-connector1:/api//public #DEPRECATED (20250923): External access via NGINX redirects
-      - EDC_DATAPLANE_PROXY_PUBLIC_ENDPOINT=http://michel-laptop:9876/api/public #DEPRECATED (20250923): External access via NGINX redirects
+      - EDC_DATAPLANE_PROXY_PUBLIC_ENDPOINT=http://localhost:9876/api/public #DEPRECATED (20250923): External access via NGINX redirects
 
       # Dataplane instance ID
       - EDC_DATAPLANE_API_INSTANCE_ID=did:web:edc-proxy-connector1%3A80:connector1

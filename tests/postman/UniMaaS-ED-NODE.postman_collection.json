@@ -226,7 +226,7 @@
                         "header": [],
                         "body": {
                           "mode": "raw",
-                          "raw": "{\n  \"@context\": [\n    \"https://w3id.org/edc/connector/management/v0.0.1\",\n    {\n      \"msc\": \"http://example.com/msc#\",\n      \"dcat\": \"http://www.w3.org/ns/dcat#\",\n      \"msc_dms\": \"http://www.w3.org/ns/msc_dms#\",\n      \"edc_rdf\": \"https://ontology.flandersmake.be/edc_rdf/ontology#\"\n    }\n  ],\n  \"@id\": \"request-rdf-service-file\",\n  \"@type\": \"Asset\",\n  \"properties\": {\n//    \"msc_dms:description\": \"File Dataset for the RDF service for testing\",\n    \"msc_dms:description\": \"Dataset 2 for Internal Processes from ttl file\",\n    \"msc_dms:name\": \"Location name\",\n    \"msc_dms:relatedSpatialRegion\":\"Various\",\n    \"msc_dms:aboutSupplier\":\"No supplier\",\n    \"msc_dms:aboutProcess\":\"true\"\n  },\n  \"dataAddress\": {\n    \"@type\": \"DataAddress\",\n    \"type\": \"RDFService\",\n//    \"edc_rdf:filePath\":\"scripts/fuseki/provider/example_provider_data.ttl\",\n    \"edc_rdf:filePath\":\"/shared-storage/demo/dataset_2/subgraph_pc3pc4_internal.ttl\",\n    \"edc_rdf:encoding\": \"UTF-8\",\n    \"edc_rdf:serialization\": \"TTL\",\n    \"edc_rdf:serviceType\":\"file\"\n  }\n}\n\n",
+                          "raw": "{\n  \"@context\": [\n    \"https://w3id.org/edc/connector/management/v0.0.1\",\n    {\n      \"msc\": \"http://example.com/msc#\",\n      \"dcat\": \"http://www.w3.org/ns/dcat#\",\n      \"msc_dms\": \"http://www.w3.org/ns/msc_dms#\",\n      \"edc_rdf\": \"https://ontology.flandersmake.be/edc_rdf/ontology#\"\n    }\n  ],\n  \"@id\": \"request-rdf-service-file\",\n  \"@type\": \"Asset\",\n  \"properties\": {\n    \"msc_dms:description\": \"Dataset 2 for Internal Processes from ttl file\",\n    \"msc_dms:name\": \"Location name\",\n    \"msc_dms:relatedSpatialRegion\":\"Various\",\n    \"msc_dms:aboutSupplier\":\"No supplier\",\n    \"msc_dms:aboutProcess\":\"true\"\n  },\n  \"dataAddress\": {\n    \"@type\": \"DataAddress\",\n    \"type\": \"RDFService\",\n    \"edc_rdf:filePath\":\"/shared-storage/demo/dataset_2/subgraph_pc3pc4_internal.ttl\",\n    \"edc_rdf:encoding\": \"UTF-8\",\n    \"edc_rdf:serialization\": \"TTL\",\n    \"edc_rdf:serviceType\":\"file\"\n  }\n}\n\n",
                           "options": {
                             "raw": {
                               "language": "json"
@@ -1030,18 +1030,32 @@
               "name": "Get Fuseki Status",
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "basic",
+                  "basic": [
+                    {
+                      "key": "username",
+                      "value": "{{FusekiUsername}}",
+                      "type": "string"
+                    },
+                    {
+                      "key": "password",
+                      "value": "{{FusekiPassword}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{Connector2Fuseki}}/$/status",
+                  "raw": "http://{{HOST}}:{{Connector2Fuseki}}/$/ping",
+                  "protocol": "http",
                   "host": [
-                    "{{Connector2Fuseki}}"
+                    "{{HOST}}"
                   ],
+                  "port": "{{Connector2Fuseki}}",
                   "path": [
                     "$",
-                    "status"
+                    "ping"
                   ]
                 }
               },
@@ -1958,7 +1972,7 @@
                     "header": [],
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n    \"@context\": [\n        \"https://w3id.org/edc/connector/management/v0.0.1\"\n    ],\n    \"@type\": \"ContractRequest\",\n    \"counterPartyAddress\": \"http://edc-connector-connector2:8082/api/dsp\",\n    \"counterPartyId\": \"{{Connector1DID}}\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"policy\": {\n        \"@type\": \"Offer\",\n        \"@id\": \"{{POLICY_ID_RDF}}\",\n        \"assigner\": \"{{Connector2DID}}\",\n        \"permission\": [{\n                \"action\": \"use\"\n            }],\n        \"prohibition\": [],\n        \"obligation\": [],\n        \"target\": \"request-rdf-service-sparql\"\n    },\n\n    \"callbackAddresses\": []\n}",
+                      "raw": "{\n    \"@context\": [\n        \"https://w3id.org/edc/connector/management/v0.0.1\"\n    ],\n    \"@type\": \"ContractRequest\",\n    \"counterPartyAddress\": \"http://edc-connector-connector2:8082/api/dsp\",\n    \"counterPartyId\": \"{{Connector2DID}}\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"policy\": {\n        \"@type\": \"Offer\",\n        \"@id\": \"{{POLICY_ID_RDF}}\",\n        \"assigner\": \"{{Connector2DID}}\",\n        \"permission\": [\n            {\n                \"action\": \"use\"\n            }\n        ],\n        \"prohibition\": [],\n        \"obligation\": [],\n        \"target\": \"request-rdf-service-sparql\"\n    },\n    \"callbackAddresses\": []\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -4582,7 +4596,7 @@
     },
     {
       "key": "Connector2Fuseki",
-      "value": ""
+      "value": "3032"
     },
     {
       "key": "ConnectorCPPort",
@@ -4618,6 +4632,15 @@
     },
     {
       "key": "QUOTE_AUTHORIZATION_RDF",
+      "secret": true
+    },
+    {
+      "key": "FusekiUsername",
+      "value": "admin"
+    },
+    {
+      "key": "FusekiPassword",
+      "value": "mypassword",
       "secret": true
     }
   ]
