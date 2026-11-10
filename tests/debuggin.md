@@ -76,6 +76,24 @@ done
    - When `issuerservicevc` or `edc-ih-connector*` containers are restarted, Docker may assign new container IPs. If the NGINX proxy containers (`edc-proxy-*`) are not restarted *after* the upstream containers, NGINX forwards requests to stale IPs and returns `502 Bad Gateway`.
 3. **Unset Postman Collection Variables (`400 Bad Request`)**:
    - Because `421` / `521` failed, Postman's post-response test script did not set `{{POLICY_ID_RDF}}`. Running `422` / `522` or `424c` / `524c` with empty `{{POLICY_ID_RDF}}` and `{{CONTRACT_AGREEMENT_ID_RDF}}` variables caused `400 Bad Request`.
+4. **Issuer DID and Private Key Disagree on Disk**:
+   - Restarts cannot fix a DID document containing a public key unrelated to the
+     current private key. This was confirmed when all nine stored VCs verified
+     against the current issuer key but failed against the published DID key.
+   - Compare the issuer private-derived public key with both the local DID and
+     the DID served by its proxy before restarting anything.
+   - If the existing signer is authoritative and the stored VCs verify against
+     it, correct only `verificationMethod[0].publicKeyJwk.x` to its derived
+     public key. Do not copy the private key into the DID or generate a new
+     keypair. No VC reissuance is needed for this correction.
+   - Otherwise, determine which key is authoritative before changing it.
+     Real key rotation requires reissuing credentials signed with the old key.
+   - Provider runtimes can retain the previously resolved key. In the observed
+     failure, correcting the served DID alone still returned `401`; restarting
+     `edc-connector-connector1` and `edc-connector-connector2` and waiting for
+     healthy status made both catalog requests return `200` with their datasets.
+     No issuer or IdentityHub restart was needed because their keys and VCs
+     already matched.
 
 ### Diagnostic Commands
 ```sh
@@ -129,6 +147,10 @@ docker exec edc-connector-connector2 curl -s -o /dev/null -w "%{http_code}\n" \
 ```
 
 ### Resolution Commands
+These commands assume IdentityHub can start successfully. If it is restarting or
+logs Vault `403` errors, follow Issue 3 first; restarting NGINX cannot repair an
+invalid Vault token. Fixed sleeps do not establish readiness.
+
 Restart the containers **in dependency order** so `issuerservicevc` reloads its private key, its NGINX proxy updates its upstream IP, the IdentityHubs re-issue all 3 VCs signed with the current key, and the connector NGINX proxies refresh their upstream IPs:
 
 ```sh
@@ -187,3 +209,110 @@ curl -i -s -X POST "http://localhost:9879/api/management/v3/catalog/request" \
 
 Once both catalog requests return `200 OK`, execute the Postman requests in order (`421` -> `422` -> `423` -> `424c` -> `425` -> `426` -> `427` -> `428` and `521` -> `522` -> `523` -> `524c` -> `525` -> `526` -> `527` -> `528`) so Postman populates the collection variables at each step.
 
+---
+
+## Issue 3: HTML `502` on Get Connector Credentials
+
+### Diagnosis
+
+Unlike the JSON catalog error in Issue 2, an NGINX HTML `502` means the proxy
+cannot get a valid upstream response. Check whether IdentityHub is actually
+running:
+
+```sh
+docker inspect edc-ih-connector1 --format 'status={{.State.Status}} restarts={{.RestartCount}}'
+docker logs --tail 150 edc-ih-connector1 2>&1 | grep -E '403|SEVERE|Mandatory url'
+docker logs --tail 30 edc-proxy-connector1
+```
+
+In the observed failure, all three IdentityHubs were crash-looping:
+
+```text
+[Hashicorp Vault] Failed to get secret with status 403
+Error booting runtime: Mandatory url for datasource 'default' not found.
+```
+
+Both stored service tokens were invalid, although the datasource secret existed.
+The old monitor checked tokens only after unsealing, checked only the connector
+token before declaring both valid, and mounted the token volume read-only.
+The corrected monitor checks and renews each token independently while Vault is
+unsealed and reports creation/write failures explicitly. Renewal requests 168
+hours explicitly rather than using Vault's possibly much shorter default.
+Vault's maximum TTL still applies; replacement requires a consumer restart.
+
+### Recovery / applying the monitor fix
+
+Run from the repository root. This rebuilds only the shared monitor image and
+recreates only its containers, without deleting Vault or PostgreSQL data.
+It then restarts the consumers to load the current tokens.
+
+```sh
+(
+set -e
+docker compose --project-name connector1 --env-file .env-connector1 \
+  -f docker-compose-connector1.yml build edc-vault-autounseal
+
+for p in connector1 connector2 connectorcp; do
+  docker compose --project-name "$p" --env-file ".env-$p" \
+    -f "docker-compose-$p.yml" up -d --no-deps --force-recreate edc-vault-autounseal
+
+  # Confirm token maintenance completed; do not print secret values.
+  docker exec "edc-vault-$p" sh -ec '
+    export VAULT_ADDR=http://127.0.0.1:8200
+    for f in /vault/token /vault/identityhub-token; do
+      VAULT_TOKEN="$(cat "$f")" vault token lookup >/dev/null
+      VAULT_TOKEN="$(cat "$f")" vault kv get secret/edc.datasource.default.url >/dev/null
+    done'
+done
+
+docker restart edc-ih-connector1 edc-ih-connector2 edc-ih-connectorcp \
+  edc-connector-connector1 edc-connector-connector2 edc-connector-connectorcp
+
+for container in edc-ih-connector1 edc-ih-connector2 edc-ih-connectorcp \
+  edc-connector-connector1 edc-connector-connector2 edc-connector-connectorcp; do
+  healthy=false
+  for attempt in $(seq 1 60); do
+    if [ "$(docker inspect --format '{{.State.Health.Status}}' "$container")" = healthy ]; then
+      healthy=true
+      break
+    fi
+    sleep 2
+  done
+  if [ "$healthy" != true ]; then
+    echo "ERROR: $container did not become healthy; inspect its logs" >&2
+    exit 1
+  fi
+done
+
+docker restart edc-proxy-connector1 edc-proxy-connector2 edc-proxy-connectorcp
+)
+```
+
+If token verification fails immediately after monitor recreation, inspect
+`docker logs edc-vault-autounseal-connector1` (or the affected instance) before
+proceeding. Do not delete volumes or regenerate signing keys to fix this failure.
+If issuer keys were also changed, make the issuer and its proxy ready as
+described in Issue 2 before restarting the IdentityHubs.
+
+### Verification
+
+```sh
+sh tests/vault-autounseal-test.sh
+
+for port in 9876 9877 9879; do
+  curl --connect-timeout 3 --max-time 10 -fsS \
+    -H "x-api-key: c3VwZXItdXNlcg==.c3VwZXItc2VjcmV0LWtleQo=" \
+    "http://localhost:$port/api/identity/v1alpha/credentials" |
+    jq -e 'length == 3'
+done
+```
+
+Expect HTTP `200` with `MembershipCredential`, `DataProcessorCredential`, and
+`LegalPerson`. NGINX `/health` alone does not validate this endpoint.
+
+### Rollback
+
+Restore the previous monitor script and Compose mount settings from your saved
+revision, rebuild the monitor image, then recreate only the monitor services
+using the commands above. Keep the current token files and persistent volumes.
+The old monitor will again require manual token maintenance.

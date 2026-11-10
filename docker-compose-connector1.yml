@@ -145,7 +145,7 @@ services:
       - VAULT_ADDR=http://edc-vault-connector1:8200
       - CHECK_INTERVAL=10
     volumes:
-      - vault-init-data-connector1:/vault:ro
+      - vault-init-data-connector1:/vault
     healthcheck:
       test: ["CMD-SHELL", "ps aux | grep -v grep | grep -q autounseal.sh || exit 1"]
       interval: 30s

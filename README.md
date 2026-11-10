@@ -135,6 +135,27 @@ docker compose --env-file .env-<instanceName> -f docker-compose-<instanceName>.y
 #docker compose --env-file .env-connector1 -f docker-compose-connector1.yml logs -f ih-connector
 ```
 
+If the credentials API returns an HTML `502 Bad Gateway`, check the IdentityHub
+container, not just the proxy. A healthy proxy does not imply a healthy upstream.
+Vault `403` errors followed by `Mandatory url for datasource 'default' not found`
+indicate an invalid service token when the datasource secret still exists.
+The Vault monitor checks both service tokens independently on every check,
+renews tokens with less than one day remaining (requesting another 168 hours),
+and replaces invalid tokens using its writable token volume.
+After replacement, restart the affected IdentityHub/connector to load the new
+token; Java reads it only at startup. Wait for healthy services before restarting
+proxies, rather than relying on fixed sleeps.
+See [credentials API recovery](tests/debuggin.md#issue-3-html-502-on-get-connector-credentials)
+for the rollout, verification, and rollback commands.
+
+A JSON catalog `BadGateway` containing DSP `401 Unauthorized` is a different
+failure: check credential signatures against the issuer's published DID key.
+Having three retrievable VCs does not establish that their signatures verify.
+If the DID key is corrected to match the existing signer, provider connectors
+may need restarting to clear the previously resolved key; no VC reissuance is
+needed when the existing VCs already verify against that signer.
+See [catalog authentication troubleshooting](tests/debuggin.md#root-causes).
+
 Next information must be obtained (no errors and 2 credentials stored):
 ```
 ...

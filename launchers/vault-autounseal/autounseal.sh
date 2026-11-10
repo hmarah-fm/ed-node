@@ -137,61 +137,76 @@ is_vault_initialized() {
 
 }
 
-# Recreate token if required
+# Renew before expiry; replacing a token also requires restarting its consumer.
+maintain_service_token() {
+    local token_file="$1"
+    local service="$2"
+    local token=""
+    local token_info
+    local ttl
+    local token_json
+
+    if [ -s "$token_file" ]; then
+        token=$(cat "$token_file")
+    fi
+
+    if [ -n "$token" ] && token_info=$(VAULT_TOKEN="$token" vault token lookup -format=json); then
+        if ! ttl=$(printf '%s' "$token_info" | jq -er '.data.ttl | numbers'); then
+            echo "ERROR: Cannot read $service token TTL" >&2
+            return 1
+        fi
+        if [ "$ttl" -eq 0 ] || [ "$ttl" -gt 86400 ]; then
+            return 0
+        fi
+        if VAULT_TOKEN="$token" vault token renew -increment=168h >/dev/null; then
+            echo "$service token renewed"
+            return 0
+        fi
+        echo "WARNING: $service token renewal failed; replacing token" >&2
+    fi
+
+    if ! token_json=$(vault token create -policy=all-policy -ttl=168h -renewable=true -format=json); then
+        echo "ERROR: Could not create $service token" >&2
+        return 1
+    fi
+    if ! token=$(printf '%s' "$token_json" | jq -er '.auth.client_token | strings | select(length > 0)'); then
+        echo "ERROR: Vault returned no $service token" >&2
+        return 1
+    fi
+    if ! printf '%s\n' "$token" > "$token_file"; then
+        echo "ERROR: Could not write $service token to $token_file" >&2
+        return 1
+    fi
+    echo "WARNING: $service token replaced; restart its container to load the new token" >&2
+}
+
+# Check both tokens independently, even when Vault did not need unsealing.
 regenerate_tokens() {
     local root_token_file="/vault/root.token"
     
     if [ ! -f "$root_token_file" ]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Root token file not found, skipping token regeneration"
-        return 0
+        echo "ERROR: Root token file not found; cannot maintain service tokens" >&2
+        return 1
     fi
     
     local root_token
     root_token=$(cat "$root_token_file")
     
     if [ -z "$root_token" ]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Root token is empty, skipping token regeneration"
-        return 0
+        echo "ERROR: Root token is empty; cannot maintain service tokens" >&2
+        return 1
     fi
     
     export VAULT_TOKEN="$root_token"
     
-    # Verify if tokens exist/valid
-    if [ -f "/vault/token" ] && [ -f "/vault/identityhub-token" ]; then
-        local edc_token
-        local ih_token
-        edc_token=$(cat /vault/token 2>/dev/null)
-        ih_token=$(cat /vault/identityhub-token 2>/dev/null)
-        
-        # Verificar validez del token EDC
-        if [ -n "$edc_token" ]; then
-            VAULT_TOKEN="$edc_token" vault token lookup >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                echo "[$(date '+%Y-%m-%d %H:%M:%S')] ℹ️ Existing tokens are valid"
-                return 0
-            fi
-        fi
+    local failed=0
+    if ! maintain_service_token /vault/token EDC; then
+        failed=1
     fi
-    
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🔄 Regenerating service tokens..."
-    
-    # Recreate tokens EDC
-    local edc_token
-    edc_token=$(vault token create -policy=all-policy -ttl=168h -renewable=true -format=json 2>/dev/null | jq -r '.auth.client_token')
-    
-    if [ -n "$edc_token" ] && [ "$edc_token" != "null" ]; then
-        echo "$edc_token" > /vault/token
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ EDC token regenerated"
+    if ! maintain_service_token /vault/identityhub-token IdentityHub; then
+        failed=1
     fi
-    
-    # Recreate tokens IdentityHub
-    local ih_token
-    ih_token=$(vault token create -policy=all-policy -ttl=168h -renewable=true -format=json 2>/dev/null | jq -r '.auth.client_token')
-    
-    if [ -n "$ih_token" ] && [ "$ih_token" != "null" ]; then
-        echo "$ih_token" > /vault/identityhub-token
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ IdentityHub token regenerated"
-    fi
+    return "$failed"
 }
 
 # Main Monitoring Loop
@@ -224,7 +239,9 @@ while true; do
             
             sleep 5
             
-            regenerate_tokens
+            if ! regenerate_tokens; then
+                echo "ERROR: Service token maintenance failed; retrying next check" >&2
+            fi
         else
             CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] ⚠️ Unseal failed (consecutive failures: $CONSECUTIVE_FAILURES)"
@@ -236,6 +253,9 @@ while true; do
             fi
         fi
     else
+        if ! regenerate_tokens; then
+            echo "ERROR: Service token maintenance failed; retrying next check" >&2
+        fi
 
         if [ $(($(date +%s) % 60)) -eq 0 ]; then
             echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Vault is unsealed and healthy"

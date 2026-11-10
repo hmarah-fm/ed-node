@@ -18,6 +18,13 @@ Where:
 - <instanceName>: Instance name.
 - <edNodeDIDHost:edNodeDIDPort>: host & port where DID related to the ED-Node can be resolved. (`ISSUERSERVICEVC_HOST`:`ISSUERSERVICEVC_DID_PORT`)
 
+The generator replaces the signing keypair. Do not rerun it merely to repair a
+catalog authentication error. The DID's `publicKeyJwk.x` must match the public
+key derived from the issuer's current private key; restarting cannot repair a
+mismatch already present on disk. Existing VCs may be present and retrievable
+but still fail signature validation against an incorrect DID key.
+See [catalog authentication troubleshooting](../debuggin.md#issue-2-502-bad-gateway-401-unauthorized-token-verification-failed--400-bad-request-on-consumer-flows-412-consumer-file-asset-and-512-consumer-sparql-asset).
+
 Running the script should create two new folders, `assets` and `vault`, with the following contents:
 
 ```
