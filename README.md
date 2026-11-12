@@ -30,7 +30,7 @@ Define parameters of `.env-<instanceName>` file:
 - `BASE_HOST`: Host
 - `NGINX_PROTOCOL`: Protocol (http or https)
 - `NGINX_EXPOSED_PORT`: Port (exposed port for NGINX - `ED-Node` gateway)
-- `NGINX_PUBLIC_HOST`: Hostname or IP advertised for public data transfers. Use `localhost` for same-machine consumers; remote consumers need a hostname or IP they can resolve and reach.
+- `NGINX_PUBLIC_HOST`: Hostname or IP advertised in EDRs for public data transfers. It must be reachable from the consumer. `localhost` only works when the consumer runs directly on the same host; from a container, it refers to that container, not the provider host.
 - `ED_NODE_INSTANCE_NAME`: `ED-Node` Identifier (contained by `ED-Node` DID)
 - `UNIMAAS_ISSUERSERVICEVC_PROTOCOL`: IssuerService Protocol (http or https) (obtaining VCs)
 - `UNIMAAS_ISSUERSERVICEVC_HOST`: IssuerService Host (obtaining VCs)
@@ -43,6 +43,17 @@ Define parameters of `.env-<instanceName>` file:
 - `UNIMAAS_OIDC_IDP_CLIENT_ID`: Keycloak ClientID asigned to `ED-Node` (obtaining JWT authenticantion)
 - `UNIMAAS_OIDC_IDP_CLIENT_SECRET`: Keycloak Client Secret  asigned to `ED-Node` (obtaining JWT authenticantion)
 - `MOCKREGISTRY_CONTEXT_URL`: (OPTIONAL) Context server resolver for @context contained by VCs (if official online pages can't be accessed negotation steps does't work)
+
+For the local Digital Thread deployment, `michel-laptop` is mapped to the Docker host gateway in the Digital Thread container. Set `NGINX_PUBLIC_HOST=michel-laptop` in each provider's `.env-<instanceName>` file (for example, `.env-connector1` and `.env-connector2`), then regenerate and apply the provider configuration:
+
+```sh
+./deploy.sh connector1
+./deploy.sh connector2
+```
+
+These commands use the default `build_up` mode and preserve Docker volumes. The script restarts `edc-proxy` after applying the connector configuration because NGINX resolves the connector's container address at startup. Do not use `down-v` or `fromzero` for this configuration change.
+
+If `NGINX_PUBLIC_HOST=localhost` is used instead, the advertised EDR URL only works for consumers running directly on the host. A consumer in another container, including the Digital Thread, resolves `localhost` to itself and cannot reach this provider endpoint.
 
 ## 1 - Create Private/Public Key, DID & Vault Config File
 

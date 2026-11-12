@@ -133,4 +133,7 @@ echo "Lifting services..."
 #docker compose --project-name "$INSTANCE_NAME" --env-file "$ENV_FILE" -f docker-compose-${INSTANCE_NAME}.yml up -d
 docker compose --project-name "$INSTANCE_NAME" --env-file "$ENV_FILE" -f docker-compose-${INSTANCE_NAME}.yml up -d
 
+# NGINX resolves connector upstream addresses at startup; refresh it after a connector is recreated.
+docker compose --project-name "$INSTANCE_NAME" --env-file "$ENV_FILE" -f docker-compose-${INSTANCE_NAME}.yml restart edc-proxy
+
 echo "Process completed for instance '$INSTANCE_NAME'!"

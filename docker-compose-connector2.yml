@@ -399,7 +399,7 @@ services:
       # Public transfer endpoint
       #- EDC_TRANSFER_PROXY_ENDPOINT=http://edc-proxy-connector2:/api/public
       #- EDC_DATAPLANE_PROXY_PUBLIC_ENDPOINT=http://edc-proxy-connector2:/api//public #DEPRECATED (20250923): External access via NGINX redirects
-      - EDC_DATAPLANE_PROXY_PUBLIC_ENDPOINT=http://localhost:9877/api/public #DEPRECATED (20250923): External access via NGINX redirects
+      - EDC_DATAPLANE_PROXY_PUBLIC_ENDPOINT=http://michel-laptop:9877/api/public #DEPRECATED (20250923): External access via NGINX redirects
 
       # Dataplane instance ID
       - EDC_DATAPLANE_API_INSTANCE_ID=did:web:edc-proxy-connector2%3A80:connector2
